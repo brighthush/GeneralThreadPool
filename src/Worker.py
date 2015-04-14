@@ -13,15 +13,41 @@ for ele in elements:
     dataQueue.put(ele)
 queueLock.release()
 
-class Consumer(threading.Thread):
-    def __init__(self, threadID, q, qLock):
-        super(Consumer, self).__init__()
-        self.threadID = threadID
-        self.q = q
-        self.qLock = qLock
+class Worker(threading.Thread):
+    def __init__(self, threadName, workerQueue, func):
+        super(Worker, self).__init__()
+        self.threadName = threadName
+        self.workerQueue = workerQueue
+        self.workingEvent = threading.Event()
+        self.doWorking = func
+        self.args = None
+
+    def setArgs(self, args):
+        self.args = args
+
+    def setWorking(self):
+        self.workingEvent.set()
+
+    def clearWorking(self):
+        self.workingEvent.clear()
+
+    def currentThread(self):
+        return threading.currentThread()
+
+    def getName(self):
+        return self.threadName
 
     def run(self):
         while True:
+            self.workingEvent.wait()
+            if self.args == None:
+                print '\t%s finished.' %(self.threadName)
+                break
+            self.doWorking(self.args)
+            self.clearWorking()
+            self.workerQueue.put(self.currentThread())
+
+"""
             self.qLock.acquire()
             if self.q.empty():
                 print "dataQueue is empty, ID[%s] is exited." %(self.threadID)
@@ -50,4 +76,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+"""
 
